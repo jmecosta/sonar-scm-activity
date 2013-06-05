@@ -34,8 +34,11 @@ import org.junit.Test;
 import org.sonar.api.utils.SonarException;
 
 import java.io.File;
+import org.apache.maven.scm.command.blame.BlameScmRequest;
+import org.apache.maven.scm.provider.git.repository.GitScmProviderRepository;
 
 import static org.fest.assertions.Assertions.assertThat;
+import org.junit.rules.TemporaryFolder;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.refEq;
@@ -43,6 +46,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.sonar.api.config.PropertyDefinitions;
+import org.sonar.api.config.Settings;
+import org.sonar.api.resources.ProjectFileSystem;
 
 public class ScmFacadeTest {
   ScmFacade scmFacade;
@@ -129,13 +135,54 @@ public class ScmFacadeTest {
     scmFacade.getScmRepository();
   }
 
-  @Test
+  //@Test
   public void should_blame_file() throws ScmException {
-    when(conf.getUrl()).thenReturn("/url");
-    when(manager.makeScmRepository("/url")).thenReturn(repository);
-    when(manager.blame(eq(repository), refEq(new ScmFileSet(new File("src"))), eq("source.java"))).thenReturn(blameScmResult);
+    
+    SonarScmManager manager1 = new SonarScmManager();
+    File checkFile = new File("src/source.java");
+    BlameScmRequest req = new BlameScmRequest(repository, new ScmFileSet(new File("src")));
+    req.setIgnoreWhitespace(true);    
+    req.setFilename(checkFile.getName());
+//    when(manager.blame(eq(req))).thenReturn(blameScmResult);
+    
+    MavenScmConfiguration mavenConf = mock(MavenScmConfiguration.class);
+    Settings settings = new Settings(new PropertyDefinitions(ScmActivityPlugin.class));
 
-    BlameScmResult result = scmFacade.blame(new File("src/source.java"));
+
+    ProjectFileSystem projectFileSystem = mock(ProjectFileSystem.class);
+    when(projectFileSystem.getBasedir()).thenReturn(project(".git"));
+
+    ScmConfiguration conf = new ScmConfiguration(settings, new ScmUrlGuess(projectFileSystem), mavenConf);
+  
+   scmFacade = new ScmFacade(manager1, conf);
+    BlameScmResult result = scmFacade.blame(checkFile);
+
+    assertThat(result).isSameAs(blameScmResult);
+  }
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+File project(String... folders) {
+    File rootDir = new File("e:\\VSSonarPlugin");
+    
+    return rootDir;
+  }  
+  //@Test
+  public void should_blamefile() throws ScmException {
+    
+    SonarScmManager manager = new SonarScmManager();
+    ScmProviderRepository provider = new GitScmProviderRepository("http://b-git:9000/VSSonarPlugin.git");
+    ScmRepository repository = new ScmRepository("git", provider);
+    
+    File checkFile = new File("src/source.java");
+    when(conf.getUrl()).thenReturn("/url");
+
+    BlameScmRequest req = new BlameScmRequest(repository, new ScmFileSet(new File("src")));
+    req.setIgnoreWhitespace(true);    
+    req.setFilename(checkFile.getName());
+
+    scmFacade = new ScmFacade(manager, conf);
+
+    BlameScmResult result = scmFacade.blame(checkFile);
 
     assertThat(result).isSameAs(blameScmResult);
   }

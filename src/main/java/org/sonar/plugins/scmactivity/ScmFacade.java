@@ -37,12 +37,17 @@ import org.sonar.api.BatchExtension;
 import org.sonar.api.utils.SonarException;
 
 import java.io.File;
+import org.apache.maven.scm.command.blame.BlameScmRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ScmFacade implements BatchExtension {
   private final SonarScmManager scmManager;
   private final ScmConfiguration configuration;
   private Supplier<ScmRepository> repository;
 
+  private static final Logger LOG = LoggerFactory.getLogger(ScmFacade.class);
+  
   public ScmFacade(SonarScmManager scmManager, ScmConfiguration configuration) {
     this.scmManager = scmManager;
     this.configuration = configuration;
@@ -50,7 +55,18 @@ public class ScmFacade implements BatchExtension {
   }
 
   public BlameScmResult blame(File file) throws ScmException {
-    return scmManager.blame(getScmRepository(), new ScmFileSet(file.getParentFile()), file.getName());
+    
+    LOG.info("Blame {}", file.getName());  
+    ScmRepository repo = getScmRepository();
+    File paren = file.getParentFile();
+    ScmFileSet xpto = new ScmFileSet(paren);
+    BlameScmRequest req = new BlameScmRequest(repo, xpto);
+    req.setFilename(file.getName());
+    req.setIgnoreWhitespace(true);
+    
+    LOG.info("Req {}", req.getFilename());    
+    LOG.info("IsIngore {}", req.isIgnoreWhitespace());
+    return scmManager.blame(req);
   }
 
   @VisibleForTesting

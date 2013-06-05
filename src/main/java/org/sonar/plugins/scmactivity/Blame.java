@@ -70,6 +70,7 @@ public class Blame implements BatchExtension {
     LOG.info("Retrieve SCM info for {}", file);
 
     try {
+      LOG.info("Lets See {}", file);      
       BlameScmResult result = scmFacade.blame(file);
       if (result.isSuccess()) {
         return result;
