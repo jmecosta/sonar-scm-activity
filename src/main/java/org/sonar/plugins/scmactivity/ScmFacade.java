@@ -29,12 +29,15 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.maven.scm.ScmException;
 import org.apache.maven.scm.ScmFileSet;
 import org.apache.maven.scm.command.blame.BlameScmResult;
+import org.apache.maven.scm.command.blame.BlameScmRequest;
 import org.apache.maven.scm.provider.ScmProviderRepository;
 import org.apache.maven.scm.provider.svn.util.SvnUtil;
 import org.apache.maven.scm.repository.ScmRepository;
 import org.apache.maven.scm.repository.ScmRepositoryException;
 import org.sonar.api.BatchExtension;
 import org.sonar.api.utils.SonarException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
@@ -42,6 +45,7 @@ public class ScmFacade implements BatchExtension {
   private final SonarScmManager scmManager;
   private final ScmConfiguration configuration;
   private Supplier<ScmRepository> repository;
+  private static final Logger LOG = LoggerFactory.getLogger(ScmFacade.class);
 
   public ScmFacade(SonarScmManager scmManager, ScmConfiguration configuration) {
     this.scmManager = scmManager;
@@ -50,7 +54,10 @@ public class ScmFacade implements BatchExtension {
   }
 
   public BlameScmResult blame(File file) throws ScmException {
-    return scmManager.blame(getScmRepository(), new ScmFileSet(file.getParentFile()), file.getName());
+    BlameScmRequest blameRequest = new BlameScmRequest(getScmRepository(), new ScmFileSet(file.getParentFile()));
+    blameRequest.setFilename(file.getName());
+    blameRequest.setIgnoreWhitespace(true);   
+    return scmManager.blame(blameRequest);
   }
 
   @VisibleForTesting
